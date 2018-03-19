@@ -108,6 +108,35 @@ def prep(train,test):
 	train['Fare_Range'] = df[df.index<=891]['Fare_Range'].astype(np.int32)
 	test['Fare_Range'] = df[df.index>891]['Fare_Range'].astype(np.int32)
 
+	#把家庭成员数进行分段，分成3段，0为1段，3及3以下分为一段，3以上分为一段。
+	#训练集
+	train['Family_Range'] = -1
+	train['Family_size'] = train['SibSp'] + train['Parch']
+	train.loc[train['Family_size']==0,'Family_Range'] = 0
+	train.loc[(train['Family_size']>0) & (train['Family_size']<=3),'Family_Range'] = 1
+	train.loc[train['Family_size']>3,'Family_Range'] = 2
+	#测试集
+	test['Family_Range'] = -1
+	test['Family_size'] = test['SibSp'] + test['Parch']
+	test.loc[test['Family_size']==0,'Family_Range'] = 0
+	test.loc[(test['Family_size']>0) & (test['Family_size']<=3),'Family_Range'] = 1
+	test.loc[test['Family_size']>3,'Family_Range'] = 2
+
+	#测试一个新特征：age_range*Pclass,把0,1,2分为0组，3,4,6分为1组，8,9,12分为2组。
+	#训练集
+	train['Age*Class_Range'] = -1
+	train['Age*Class'] = train['Age_Range']*train['Pclass']
+	train.loc[train['Age*Class']<=2,'Age*Class_Range'] = 0
+	train.loc[(train['Age*Class']>2) & (train['Age*Class']<=6),'Age*Class_Range'] = 1
+	train.loc[train['Age*Class']>=8,'Age*Class_Range'] = 2
+	#测试集
+	test['Age*Class_Range'] = -1
+	test['Age*Class'] = test['Age_Range']*test['Pclass']
+	test.loc[test['Age*Class']<=2,'Age*Class_Range'] = 0
+	test.loc[(test['Age*Class']>2) & (test['Age*Class']<=6),'Age*Class_Range'] = 1
+	test.loc[test['Age*Class']>=8,'Age*Class_Range'] = 2
+
+
 	return train,test
 
 
@@ -175,7 +204,7 @@ def fill_na_age(ages,df):
 	df.loc[dr+df.index[0],'Age'] = ages['Dr']
 	return df
 
-
+#根据随机森林进行回归，得出缺失年龄的人的年龄。
 def set_missing_ages(df):
 	age_df = df[['Age','Fare','Parch','SibSp','Pclass']]
 	known_age = age_df[pd.notna(age_df['Age'])]

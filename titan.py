@@ -8,6 +8,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier,BaggingRegressor
 from sklearn import cross_validation
 
+from keras.models import Sequential
+from keras.layers import Dense,Activation
+from keras.optimizers import SGD
+
 def set_missing_ages(df):
 	age_df = df[['Age','Fare','Parch','SibSp','Pclass']]
 	known_age = age_df[pd.notna(age_df['Age'])]
@@ -62,8 +66,8 @@ def ada_predict(test,ada):
 	prediction = ada.predict(test_mat)
 	return prediction
 
-def df_res(df,res):
-	s = pd.DataFrame({'PassengerId':df.index,'Survived':res.astype(np.int32)})
+def df_res(test,res):
+	s = pd.DataFrame({'PassengerId':test.index,'Survived':res.astype(np.int32)})
 	return s
 
 def bagging(df,test):
@@ -114,3 +118,22 @@ def plot_learn_curve(model,train,label,ylim=None,cv=None,n_jobs=1,train_sizes=np
 		diff = (train_scores_mean[-1]+test_scores_std[-1]) - (test_scores_mean[-1]-test_scores_std[-1])
 		return midpoint,diff
 
+#用神经网络试一试
+def init_nn():
+	model = Sequential()
+
+	model.add(Dense(input_dim=7,units=20,kernel_initializer='he_normal'))
+	model.add(Activation('sigmoid'))
+
+	model.add(Dense(units=30,kernel_initializer='he_normal'))
+	model.add(Activation('sigmoid'))
+
+	model.add(Dense(units=2))
+	model.add(Activation('softmax'))
+
+	return model
+
+def fit_model(model,x_train,y_train):
+	model.compile(optimizer=SGD(lr=0.1),loss='mse',metrics=['accuracy']) #adam优化方法
+	model.fit(x_train,y_train,epochs=60,validation_split=0.05)  #取训练集的5%作为验证集
+	return model
